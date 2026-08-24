@@ -265,15 +265,15 @@ With 8 SSTables, optimized read hit latency (~714 µs) is roughly **3× faster**
 
 **Optimized vs linear scan (read hit and read miss)**
 
-Phase 7 read comparison: optimized vs linear scan
+![Phase 7 read comparison: optimized vs linear scan](docs/benchmarks/phase7_read_comparison.png)
 
 **Read latency vs SSTable count**
 
-Read latency vs number of SSTables
+![Read latency vs number of SSTables](docs/benchmarks/phase7_sstable_sweep.png)
 
 **Write throughput**
 
-Write throughput in puts per second
+![Write throughput in puts per second](docs/benchmarks/phase7_write_throughput.png)
 
 Regenerate plots (updates `docs/benchmarks/` for the README):
 
