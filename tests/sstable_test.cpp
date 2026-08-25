@@ -1,5 +1,6 @@
 #include "engine/engine.h"
 #include "sstable/sstable.h"
+#include "vlog/vlog.h"
 
 #include <cassert>
 #include <cstdio>
@@ -121,6 +122,7 @@ static void test_sstable_reader_get() {
 static void test_engine_auto_flush() {
     const std::string wal_path = "test_flush.wal";
     removeFile(wal_path);
+    removeFile(ValueLog::pathFromWal(wal_path));
 
     Engine engine(wal_path, /*flush_threshold=*/3);
 
@@ -135,9 +137,10 @@ static void test_engine_auto_flush() {
     assert(engine.sstables().size() == 1);
 
     SSTableReader reader(engine.sstables().front());
-    assert(reader.get("k1") == "v1");
-    assert(reader.get("k2") == "v2");
-    assert(reader.get("k3") == "v3");
+    const auto payload = reader.get("k1");
+    assert(payload.has_value());
+    assert(Vptr::decode(*payload).has_value());
+    assert(*payload != "v1");
 
     assert(engine.get("k1") == "v1");
     assert(engine.get("k2") == "v2");

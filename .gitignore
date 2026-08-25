@@ -9,3 +9,4 @@ benchmarks/data/
 benchmarks/output/
 *.wal
 *.sst
+*.vlog

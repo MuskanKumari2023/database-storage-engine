@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../memtable/memtable.h"
+#include "../vlog/vlog.h"
 #include "../wal/wal.h"
 
 #include <optional>
@@ -21,6 +22,7 @@ public:
 
     const Memtable& memtable() const;
     const Wal& wal() const;
+    const ValueLog& vlog() const;
     bool compact();
     const std::vector<std::string>& sstables() const;
     std::size_t lastBloomSkips() const;
@@ -28,6 +30,7 @@ public:
 private:
     std::string wal_path_;
     Wal wal_;
+    ValueLog vlog_;
     Memtable memtable_;
     std::vector<std::string> sstable_paths_;  // newest first
     std::size_t flush_threshold_;
@@ -39,4 +42,6 @@ private:
     void maybeFlush();
     void maybeCompact();
     std::string makeSstablePath();
+    std::optional<std::string> lookupPayload(const std::string& key) const;
+    std::optional<std::string> resolveValue(const std::string& payload) const;
 };

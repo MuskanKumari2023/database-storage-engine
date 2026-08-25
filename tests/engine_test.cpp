@@ -1,18 +1,20 @@
 #include "engine/engine.h"
+#include "vlog/vlog.h"
 
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-static void removeFile(const std::string& path) {
+static void removeEngineFiles(const std::string& path) {
     std::remove(path.c_str());
+    std::remove(ValueLog::pathFromWal(path).c_str());
 }
 
 // Task 4.1: memtable value wins over older SSTable
 static void test_memtable_wins_over_sstable() {
     const std::string wal_path = "phase4_memtable_wins.wal";
-    removeFile(wal_path);
+    removeEngineFiles(wal_path);
 
     Engine engine(wal_path, /*flush_threshold=*/2);
 
@@ -31,7 +33,7 @@ static void test_memtable_wins_over_sstable() {
 // Task 4.1: memtable tombstone hides older SSTable value
 static void test_memtable_tombstone_wins() {
     const std::string wal_path = "phase4_tombstone.wal";
-    removeFile(wal_path);
+    removeEngineFiles(wal_path);
 
     Engine engine(wal_path, 2);
 
@@ -45,7 +47,7 @@ static void test_memtable_tombstone_wins() {
 // Task 4.2: key only in memtable
 static void test_get_memtable_only() {
     const std::string wal_path = "phase4_memtable_only.wal";
-    removeFile(wal_path);
+    removeEngineFiles(wal_path);
 
     Engine engine(wal_path, 100);  // no flush
 
@@ -57,7 +59,7 @@ static void test_get_memtable_only() {
 // Task 4.2: key only in one SSTable (memtable empty after flush)
 static void test_get_single_sstable() {
     const std::string wal_path = "phase4_single_sst.wal";
-    removeFile(wal_path);
+    removeEngineFiles(wal_path);
 
     Engine engine(wal_path, 2);
 
@@ -74,7 +76,7 @@ static void test_get_single_sstable() {
 // Task 4.2: keys spread across multiple SSTables
 static void test_get_multi_sstable() {
     const std::string wal_path = "phase4_multi_sst.wal";
-    removeFile(wal_path);
+    removeEngineFiles(wal_path);
 
     Engine engine(wal_path, 2);
 

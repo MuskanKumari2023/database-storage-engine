@@ -11,6 +11,7 @@ Engine::Engine(std::string wal_path,
     std::size_t compact_threshold)
 : wal_path_(std::move(wal_path)),
 wal_(wal_path_),
+vlog_(ValueLog::pathFromWal(wal_path_)),
 flush_threshold_(flush_threshold),
 compact_threshold_(compact_threshold),
 next_sstable_id_(1),
@@ -62,12 +63,17 @@ void Engine::maybeFlush() {
 }
 
 void Engine::put(const std::string& key, const std::string& value) {
-    wal_.appendPut(key, value);
-    memtable_.put(key, value);
+    const auto vptr = vlog_.append(key, value);
+    if (!vptr.has_value()) {
+        return;
+    }
+    const std::string payload = vptr->encode();
+    wal_.appendPut(key, payload);
+    memtable_.put(key, payload);
     maybeFlush();
 }
 
-std::optional<std::string> Engine::get(const std::string& key) const {
+std::optional<std::string> Engine::lookupPayload(const std::string& key) const {
     last_bloom_skips_ = 0;
 
     if (memtable_.contains(key)) {
@@ -88,6 +94,22 @@ std::optional<std::string> Engine::get(const std::string& key) const {
     return std::nullopt;
 }
 
+std::optional<std::string> Engine::resolveValue(const std::string& payload) const {
+    const auto vptr = Vptr::decode(payload);
+    if (!vptr.has_value()) {
+        return std::nullopt;
+    }
+    return vlog_.read(*vptr);
+}
+
+std::optional<std::string> Engine::get(const std::string& key) const {
+    const auto payload = lookupPayload(key);
+    if (!payload.has_value()) {
+        return std::nullopt;
+    }
+    return resolveValue(*payload);
+}
+
 void Engine::remove(const std::string& key) {
     wal_.appendDelete(key);
     memtable_.remove(key);
@@ -100,6 +122,10 @@ const Memtable& Engine::memtable() const {
 
 const Wal& Engine::wal() const {
     return wal_;
+}
+
+const ValueLog& Engine::vlog() const {
+    return vlog_;
 }
 
 const std::vector<std::string>& Engine::sstables() const {

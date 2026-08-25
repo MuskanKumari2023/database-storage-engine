@@ -11,6 +11,7 @@ g++ -std=c++17 -O2 -Wall -Wextra -I. \
   sstable/bloom_filter.cpp \
   sstable/sparse_index.cpp \
   sstable/sstable.cpp \
+  vlog/vlog.cpp \
   engine/engine.cpp \
   benchmarks/benchmark.cpp \
   -o benchmarks/benchmark

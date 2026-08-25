@@ -1,5 +1,6 @@
 #include "engine/engine.h"
 #include "sstable/sstable.h"
+#include "vlog/vlog.h"
 
 #include <cassert>
 #include <cstdio>
@@ -44,6 +45,7 @@ static void test_bloom_skips_negative_lookup() {
 static void test_engine_bloom_skips_sstables() {
     const std::string wal_path = "index_engine.wal";
     removeFile(wal_path);
+    removeFile(ValueLog::pathFromWal(wal_path));
 
     Engine engine(wal_path, 2, 10);
 
