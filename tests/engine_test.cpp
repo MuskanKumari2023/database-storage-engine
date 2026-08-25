@@ -7,8 +7,14 @@
 #include <string>
 
 static void removeEngineFiles(const std::string& path) {
+    const std::string base = ValueLog::pathFromWal(path);
     std::remove(path.c_str());
-    std::remove(ValueLog::pathFromWal(path).c_str());
+    std::remove((path + ".sstables").c_str());
+    std::remove(base.c_str());
+    std::remove(ValueLog::currentMarkerPath(base).c_str());
+    for (std::uint32_t id = 2; id <= 8; ++id) {
+        std::remove(ValueLog::segmentPath(base, id).c_str());
+    }
 }
 
 // Task 4.1: memtable value wins over older SSTable

@@ -1,6 +1,7 @@
 #include "vlog.h"
 
 #include <fstream>
+#include <sstream>
 
 namespace {
 
@@ -96,8 +97,9 @@ std::optional<Vptr> Vptr::decode(const std::string& bytes) {
     return vptr;
 }
 
-ValueLog::ValueLog(std::string path, std::uint32_t segment_id)
-    : path_(std::move(path)),
+ValueLog::ValueLog(std::string base_path, std::uint32_t segment_id)
+    : base_path_(std::move(base_path)),
+      path_(segmentPath(base_path_, segment_id)),
       segment_id_(segment_id),
       next_offset_(0) {
     std::ifstream in(path_, std::ios::binary | std::ios::ate);
@@ -118,8 +120,48 @@ std::string ValueLog::pathFromWal(const std::string& wal_path) {
     return wal_path + ".vlog";
 }
 
+std::string ValueLog::segmentPath(const std::string& base_path, std::uint32_t segment_id) {
+    if (segment_id <= 1) {
+        return base_path;
+    }
+    std::ostringstream oss;
+    oss << base_path << '.' << segment_id;
+    return oss.str();
+}
+
+std::string ValueLog::currentMarkerPath(const std::string& base_path) {
+    return base_path + ".current";
+}
+
+std::uint32_t ValueLog::loadCurrentSegmentId(const std::string& base_path) {
+    std::ifstream in(currentMarkerPath(base_path));
+    if (!in) {
+        return kDefaultVlogSegmentId;
+    }
+    std::uint32_t id = kDefaultVlogSegmentId;
+    in >> id;
+    if (!in || id == 0) {
+        return kDefaultVlogSegmentId;
+    }
+    return id;
+}
+
+bool ValueLog::storeCurrentSegmentId(const std::string& base_path, std::uint32_t segment_id) {
+    std::ofstream out(currentMarkerPath(base_path), std::ios::trunc);
+    if (!out) {
+        return false;
+    }
+    out << segment_id << '\n';
+    out.flush();
+    return static_cast<bool>(out);
+}
+
 const std::string& ValueLog::path() const {
     return path_;
+}
+
+const std::string& ValueLog::basePath() const {
+    return base_path_;
 }
 
 std::uint32_t ValueLog::segmentId() const {
@@ -159,11 +201,11 @@ std::optional<Vptr> ValueLog::append(const std::string& key, const std::string& 
 }
 
 std::optional<std::string> ValueLog::read(const Vptr& vptr) const {
-    if (vptr.segment_id != segment_id_) {
-        return std::nullopt;
-    }
+    const std::string file = (vptr.segment_id == segment_id_)
+                                 ? path_
+                                 : segmentPath(base_path_, vptr.segment_id);
 
-    std::ifstream in(path_, std::ios::binary);
+    std::ifstream in(file, std::ios::binary);
     if (!in) {
         return std::nullopt;
     }
@@ -184,4 +226,37 @@ std::optional<std::string> ValueLog::read(const Vptr& vptr) const {
         return std::nullopt;
     }
     return value;
+}
+
+void ValueLog::forEachRecord(const std::function<void(const VlogScanEntry&)>& fn) const {
+    std::ifstream in(path_, std::ios::binary);
+    if (!in) {
+        return;
+    }
+
+    std::uint64_t offset = 0;
+    while (true) {
+        std::uint32_t key_len = 0;
+        std::uint32_t val_len = 0;
+        if (!readU32(in, key_len) || !readU32(in, val_len)) {
+            break;
+        }
+        VlogScanEntry entry;
+        entry.offset = offset;
+        if (!readExact(in, entry.key, key_len) || !readExact(in, entry.value, val_len)) {
+            break;
+        }
+        fn(entry);
+        offset += 8ull + static_cast<std::uint64_t>(key_len) +
+                  static_cast<std::uint64_t>(val_len);
+    }
+}
+
+bool ValueLog::truncate() {
+    std::ofstream out(path_, std::ios::binary | std::ios::trunc);
+    if (!out) {
+        return false;
+    }
+    next_offset_ = 0;
+    return true;
 }

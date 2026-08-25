@@ -45,7 +45,9 @@ static void test_bloom_skips_negative_lookup() {
 static void test_engine_bloom_skips_sstables() {
     const std::string wal_path = "index_engine.wal";
     removeFile(wal_path);
+    removeFile(wal_path + ".sstables");
     removeFile(ValueLog::pathFromWal(wal_path));
+    removeFile(ValueLog::currentMarkerPath(ValueLog::pathFromWal(wal_path)));
 
     Engine engine(wal_path, 2, 10);
 

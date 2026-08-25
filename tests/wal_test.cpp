@@ -88,7 +88,9 @@ static void test_replay_into_memtable() {
 static void test_engine_crash_recovery() {
     const std::string path = "test_engine.wal";
     removeFile(path);
+    removeFile(path + ".sstables");
     removeFile(ValueLog::pathFromWal(path));
+    removeFile(ValueLog::currentMarkerPath(ValueLog::pathFromWal(path)));
 
     // "Process 1" writes data
     // High flush threshold so data stays in WAL for crash recovery test

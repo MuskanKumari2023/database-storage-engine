@@ -122,7 +122,9 @@ static void test_sstable_reader_get() {
 static void test_engine_auto_flush() {
     const std::string wal_path = "test_flush.wal";
     removeFile(wal_path);
+    removeFile(wal_path + ".sstables");
     removeFile(ValueLog::pathFromWal(wal_path));
+    removeFile(ValueLog::currentMarkerPath(ValueLog::pathFromWal(wal_path)));
 
     Engine engine(wal_path, /*flush_threshold=*/3);
 

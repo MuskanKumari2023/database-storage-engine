@@ -9,4 +9,7 @@ benchmarks/data/
 benchmarks/output/
 *.wal
 *.sst
+*.sstables
 *.vlog
+*.vlog.*
+*.current

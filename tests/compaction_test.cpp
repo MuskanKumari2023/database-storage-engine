@@ -71,7 +71,9 @@ static void test_merge_tombstone_wins() {
 static void test_engine_auto_compact() {
     const std::string wal_path = "compact_auto.wal";
     removeFile(wal_path);
+    removeFile(wal_path + ".sstables");
     removeFile(ValueLog::pathFromWal(wal_path));
+    removeFile(ValueLog::currentMarkerPath(ValueLog::pathFromWal(wal_path)));
 
     Engine engine(wal_path, /*flush_threshold=*/2, /*compact_threshold=*/3);
 
@@ -98,7 +100,9 @@ static void test_engine_auto_compact() {
 static void test_compact_preserves_latest() {
     const std::string wal_path = "compact_latest.wal";
     removeFile(wal_path);
+    removeFile(wal_path + ".sstables");
     removeFile(ValueLog::pathFromWal(wal_path));
+    removeFile(ValueLog::currentMarkerPath(ValueLog::pathFromWal(wal_path)));
 
     Engine engine(wal_path, 2, 3);
 

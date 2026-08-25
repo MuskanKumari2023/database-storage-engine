@@ -19,6 +19,7 @@ public:
     void remove(const std::string& key);
 
     bool flush();  // manual flush; also called automatically at threshold
+    bool gcValueLog();
 
     const Memtable& memtable() const;
     const Wal& wal() const;
@@ -39,6 +40,8 @@ private:
     mutable std::size_t last_bloom_skips_;
 
     void recoverFromWal();
+    void recoverSstables();
+    void writeSstableManifest() const;
     void maybeFlush();
     void maybeCompact();
     std::string makeSstablePath();
